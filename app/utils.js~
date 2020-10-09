@@ -1,0 +1,286 @@
+var url   = require('url');
+var L8Collection = require('./models/l8collection');
+
+var http = require('http');
+var queryString = require('querystring');
+
+var buildLocationList = function(results, dis, coordArray) {
+    var locations = [];
+    results.forEach(function(doc) {
+	    console.log("filename: " + doc.filename);
+	    console.log("cloud: " + doc.cloud);
+	    console.log("date: " + doc.date);
+	    console.log("geometry: ");
+
+	    var geom = doc.geometry; 
+	    var coords = geom.coordinates;
+	    console.log("coordinates length: " + coords.length);
+	    var coordinates = coords[0];
+	   
+	    console.log("vertex 1 x: " + coordinates[0][0] );
+	    console.log("vertex 1 y: " + coordinates[0][1] );
+	    console.log("vertex 2 x: " + coordinates[1][0] );
+	    console.log("vertex 2 y: " + coordinates[1][1] );
+	    console.log("vertex 3 x: " + coordinates[2][0] );
+	    console.log("vertex 3 y: " + coordinates[2][1] );
+	    console.log("vertex 4 x: " + coordinates[3][0] );
+	    console.log("vertex 4 y: " + coordinates[3][1] );
+	    console.log("vertex 5 x: " + coordinates[4][0] );
+	    console.log("vertex 5 y: " + coordinates[4][1] );
+	    
+	    var array = [];
+	    array.push(coordinates[0].slice());
+	    array.push(coordinates[1].slice());
+	    array.push(coordinates[2].slice());
+	    array.push(coordinates[3].slice());
+	    array.push(coordinates[4].slice());
+	    coordArray.push(array.slice());
+
+	    locations.push({
+		    distance: dis, 
+			filename: doc.filename,
+			cloud: doc.cloud,
+			date: doc.date,
+			_id: doc._id
+		    
+			});
+    });
+    return locations;
+};
+
+var buildObjLocationList = function(results, dis) {
+    var locations = [];
+    results.forEach(function(doc) {
+        locations.push({
+            distance: dis, 
+            filename: doc.obj.filename,
+            date: doc.obj.date,
+            cloud: doc.obj.cloud,
+            _id: doc.obj._id
+        });
+    });
+    return locations;
+};
+
+function pointToLine(x, y, x1, y1, x2, y2) {
+
+  var A = x - x1;
+  var B = y - y1;
+  var C = x2 - x1;
+  var D = y2 - y1;
+
+  var dot = A * C + B * D;
+  var len_sq = C * C + D * D;
+  var param = -1;
+  if (len_sq != 0) //in case of 0 length line
+      param = dot / len_sq;
+
+  var xx, yy;
+
+  if (param < 0) {
+    xx = x1;
+    yy = y1;
+  }
+  else if (param > 1) {
+    xx = x2;
+    yy = y2;
+  }
+  else {
+    xx = x1 + param * C;
+    yy = y1 + param * D;
+  }
+
+  var dx = x - xx;
+  var dy = y - yy;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+module.exports = function PointInPolygon(point, vs) {
+    // ray-casting algorithm based on
+    // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+    
+    var x = point[0], y = point[1];
+    
+    var inside = false;
+    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        var xi = vs[i][0], yi = vs[i][1];
+        var xj = vs[j][0], yj = vs[j][1];
+        
+        var intersect = ((yi > y) != (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    
+    return inside;
+};
+
+
+module.exports = function SelectFiles(app, req, res) { 
+
+    console.log("In Path: " + req.path);
+
+    if( req.path == "/api/maploc") {
+	console.log("In GET");
+
+	//console.log(L8Collection.count());
+  
+	var distance=-1.0, lng, lat, sensor, cloud, sttime,endtime;
+	var fileobj = [];
+	
+	// get query params as object
+	if (req.url.indexOf('?') >= 0) {
+	    oQueryParams = queryString.parse(req.url.replace(/^.*\?/, ''));
+
+	    var params = require('util').inspect(oQueryParams);
+	    var obj = eval("(function(){return " + params + ";})()");
+	    console.log(obj.sensor);
+	    console.log(obj.longitude);
+	    console.log(obj.latitude);
+	    console.log(obj.starttime);
+	    console.log(obj.endtime);
+	    console.log(obj.cloud);
+	    console.log(obj.distance);
+
+	    distance = Number(obj.distance);
+	    lng = Number(obj.longitude);
+	    lat = Number(obj.latitude);
+	    sensor = obj.sensor;
+	    cloud = obj.cloud;
+	    sttime = obj.starttime;
+	    endtime = obj.endtime;
+	}
+
+	if( distance > 0 ){
+	    
+	    console.log("In DB");
+	    console.log("distance: " + distance);
+
+	    var otype = "aggregate";    
+	    otype = "geonear";
+
+	    if( sensor == "L8" ){
+	    
+		/* solution one:
+		   use aggregate() to pipe geoNear and geoIntersects
+		*/
+		L8Collection.aggregate([{
+			    $geoNear: {
+				near: { type: "Point", coordinates: [ lng , lat ] },
+				    maxDistance: 1250,
+				    distanceField: "dist.calculated",
+				    query: {
+				    "geometry":{
+					"$geoIntersects":{
+					    "$geometry":{
+						"type":"Point",
+						    "coordinates":[
+								   lng,
+								   lat
+								   ]
+						    }
+					}
+				    }
+				},
+				    spherical: true
+
+				    }
+			}
+			],function(err, docs){
+			console.log("in searching");
+			if(err){
+			    console.log(err);
+			} else {
+			    var count = 0;
+			    var coords = [];
+			    var filenames = [];
+
+			    // get two arrays of list and coordinates
+			    var list = buildLocationList(docs, distance, coords);
+			    for( i = 0; i < list.length; i++ )
+				filenames.push(list[i].filename);
+		
+			    console.log("filenames: " + filenames.length);
+
+			    // send data back to client
+			    res.json(docs);
+
+			    // filtering out RT files
+			    var files = [];
+			    if( filenames.length > 0 ){
+				console.log( filenames.length);
+				var files = [];
+				for( i = 0; i < filenames.length; i++ ){
+				    var n = filenames[i].search("T1");
+				    if( n > 0 ){
+					var obj = new Object();
+					obj.filename = filenames[i];
+					obj.coord = coords[i].slice();
+					obj.disEdge = 1000000;
+					fileobj.push(obj);				    
+					console.log(filenames[i]);
+				    }
+				}
+			    }
+			    console.log("File obj size: " + fileobj.length);
+			    count = 0;
+			    var point = [lng,lat];
+			    for( var i = 0; i < fileobj.length; i++ ){
+				var inside = PointInPolygon(point, fileobj[i].coord);
+				if( inside == true ){
+				    count++;
+				    fileobj[i].disEdge = 0;
+				}
+			    }
+			    console.log("Point in Polygon size: " + count);
+			}
+				       
+		    }
+
+		    );
+	    }
+	    else {
+		
+		/*	
+			Solution two:
+			Only use geoNear to find documents near to the given point
+		*/
+	  
+		var point = {
+		    type: "Point",
+		    coordinates: [lng, lat]
+		};
+		var geoOptions =  {
+		    spherical: true,
+		    //maxDistance: meterConversion.kmToM(maxDistance),
+		    maxDistance: distance
+		};
+	   
+		L8Collection.geoNear(point, geoOptions, function(err, results, stats) {
+			var locations;
+			console.log('Geo Results', results);
+			console.log('Geo stats', stats);
+			if (err) {
+			    console.log('geoNear error:', err);
+			    //sendJsonResponse(res, 404, err);
+			} else {
+			    locations = buildObjLocationList( results, distance);
+			    console.log("Location: " + locations);
+			    //sendJsonResponse(res, 200, locations);
+			    res.json(locations);
+			}
+		    });
+	    
+		console.log("In DB1");
+	    
+	    }
+	    
+	}
+
+	//res.json([{"name":"Hello Yun!"}]);
+
+    }
+    else
+	res.json([{"name":"Hello Yun!"}]);
+    
+};
+    

@@ -1,0 +1,213 @@
+<!doctype html>
+
+<!-- ASSIGN OUR ANGULAR MODULE -->
+<html ng-app="scotchTodo">
+  <head>
+    <!-- META -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1  shrink-to-fit=no"><!-- Optimize mobile viewport -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Node/Angular Todo App</title>
+
+
+    <!-- Change the order of SCROLLS and Bootstrap core CSS will make navbar different,
+	 it seems to me Bootstrap core CSS control navbar.  But inorder to make component 
+	 in the Database page, SCROLLS need to include as well   - Zhao
+   -->
+	 
+    
+    <!-- SCROLLS -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css"><!-- load bootstrap -->
+
+       <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
+
+    <!-- Plugin CSS -->
+    <link href="vendor/magnific-popup/magnific-popup.css" rel="stylesheet">
+
+     <!-- Custom styles for this template -->
+    <link href="css/landing-page.css" rel="stylesheet">
+    <link href="css/creative.min.css" rel="stylesheet">
+
+    <!-- SPELLS -->
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script><!-- load angular -->
+
+    <script src="js/controllers/main.js"></script> <!-- load up our controller -->
+    <script src="js/services/todos.js"></script> <!-- load our todo service -->
+    <script src="js/core.js"></script> <!-- load our main application -->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+      <!-- openstreetmap stuff -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" />
+
+
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+
+  </head>
+
+  <!-- SET THE CONTROLLER -->
+  <body id="page-top">
+    <nav class="navbar navbar-expand-lg navbar-light bg-success fixed-top" id="mainNav">
+       <div class="container">
+        <a class="navbar-brand" href="#page-top">Geo-Agriculture</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="#about">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#services">Services</a>
+            </li>
+	    <li class="nav-item">
+              <a class="nav-link" href="#portfolio">PortFolio</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#contact">Contact</a>
+            </li>
+	    <li class="nav-item">
+              <a class="nav-link" href="#logon">Login</a>
+            </li>
+          </ul>
+        </div>
+     </div>
+    </nav>
+   
+
+    <header class="masthead">
+      <div class="header-content">
+        <div class="header-content-inner">
+          <h1 id="homeHeading">Your Favorite Source of Free Bootstrap Themes</h1>
+          <hr>
+          <p>Start Bootstrap can help you build better websites using the Bootstrap CSS framework! Just download your template and start going, no strings attached!</p>
+          <a class="btn btn-primary btn-xl js-scroll-trigger" href="#about">Find Out More</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="bg-primary" id="about">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto text-center">
+            <h2 class="section-heading text-white">We've got what you need!</h2>
+            <hr class="light">
+            <p class="text-faded">Start Bootstrap has everything you need to get your new website up and running in no time! All of the templates and themes on Start Bootstrap are open source, free to download, and easy to use. No strings attached!</p>
+            <a class="btn btn-default btn-xl js-scroll-trigger" href="#services">Get Started!</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="services">
+      <div class="container">
+	<h1>Leaflet Example</h1> <!-- cannot remove this line, otherwise zoom in/out button dispeared -->
+ 
+	<div id="map" style="width: 800px; height: 400px; border: 1px solid #AAA;"></div>
+	<script type='text/javascript' src='maps/markers.json'></script>
+	<script type='text/javascript' src='maps/leaf-demo.js'></script>
+	<div class="form-group row">
+	  <div class="col-xs-2">
+	    <label for="ex1">Longitude</label>
+	    <input class="form-control" id="ex1" type="text">
+	  </div>
+	  <div class="col-xs-2">
+	    <label for="ex2">Latitude</label>
+	    <input class="form-control" id="ex2" type="text">
+	  </div>
+	  <div class="col-xs-2">
+	    <label for="ex3">Start Time</label>
+	    <input class="form-control" id="ex3" type="text">
+	  </div>
+	  <div class="col-xs-2">
+	    <label for="ex4">End Time</label>
+	    <input class="form-control" id="ex4" type="text">
+	  </div>
+	  <div class="col-xs-2">
+	    <label for="ex5">Distance</label>
+	    <input class="form-control" id="ex5" type="text">
+	  </div>
+	  <div class="col-xs-2">
+	    <label for="ex6">Area</label>
+	    <input class="form-control" id="ex6" type="text">
+	  </div>
+	  <div class="col-xs-2">
+	    <label for="ex7">Sensor</label>
+	    <input class="form-control" id="ex7" type="text">
+	  </div>
+	  <button type="Select" class="btn btn-primary btn-lg">Send</button>
+	</div> 
+      </div>
+    </section>
+   
+
+    <section id="portfolio" ng-controller="mainController">
+      <div class="container">
+	<!-- HEADER AND TODO COUNT -->
+	<div class="jumbotron text-center">
+	  <h1>I'm a Todo-aholic <span class="label label-info">{{ todos.length }}</span></h1>
+	</div>
+
+	<!-- TODO LIST -->
+	<div id="todo-list" class="row">
+	  <div class="col-sm-4 col-sm-offset-4">
+
+	    <!-- LOOP OVER THE TODOS IN $scope.todos -->
+	    <div class="checkbox" ng-repeat="todo in todos">
+	      <label>
+		<input type="checkbox" ng-click="deleteTodo(todo._id)"> {{ todo.text }}
+	      </label>
+	    </div>
+
+	    <p class="text-center" ng-show="loading">
+	      <span class="fa fa-spinner fa-spin fa-3x"></span>
+	    </p>
+
+	  </div>
+	</div>
+
+	<!-- FORM TO CREATE TODOS -->
+	<div id="todo-form" class="row">
+	  <div class="col-sm-8 col-sm-offset-2 text-center">
+	    <form>
+	      <div class="form-group">
+	      
+		<!-- BIND THIS VALUE TO formData.text IN ANGULAR -->
+		<input type="text" class="form-control input-lg text-center" placeholder="I want to buy a puppy that will love me forever" ng-model="formData.text">
+	      </div>
+
+	      <!-- createToDo() WILL CREATE NEW TODOS -->
+	      <button type="submit" class="btn btn-primary btn-lg" ng-click="createTodo()">Add</button>
+	    </form>
+	  </div>
+	</div>
+      </div>
+    </section>
+
+
+    <section id="contact">
+      <div class="text-center text-muted">
+	<p>A demo by <a href="http://scotch.io">Scotch</a>.</p>
+	<p>Read the <a href="http://scotch.io/tutorials/javascript/creating-a-single-page-todo-app-with-node-and-angular">tutorial</a>.</p>
+      </div>
+    </section>
+
+     <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/popper/popper.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+	
+  </body>
+</html>

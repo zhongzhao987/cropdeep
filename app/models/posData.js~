@@ -1,0 +1,27 @@
+var mongoose = require('mongoose');
+
+module.exports = mongoose.model('Todo', {
+    text: {
+        type: String,
+        default: ''
+    }
+});
+
+
+// create a schema
+var posSchema = new posInSchema({
+  longitude: String,
+  latitude:  String,
+  distance: String,
+  sensor: String,
+  start_time: String,
+  end_time: String
+});
+
+// the schema is useless so far
+// we need to create a model using it
+var posData = mongoose.model('posData', posSchema);
+
+// make this available to our users in our Node applications
+module.exports = posData;
+

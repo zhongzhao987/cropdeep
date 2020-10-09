@@ -1,0 +1,43 @@
+
+
+<div class="slideshow-container" style="display:none"></div> 
+
+ 
+<script>
+function addImages( index, total, data, sensorName){
+    <div class="mySlides fade">
+	<div class="numbertext">index / total</div>
+	<img src="img1.jpg" style="width:100%">
+	<div class="text">sensorName</div>
+    </div>
+}
+function addSlideArrays(){
+    <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+    <a class="next" onclick="plusSlides(1)">&#10095;</a>
+}
+
+function addSlideDots(index){
+    var i;
+    <br>
+    <div style="text-align:center">
+      for( i = 1; i <= index; i++ ){
+			   var name = "currentSlide(" + String(i) + ")";
+			   <span class="dot" onclick=name></span>
+			   }
+    </div> 
+}
+
+function displaySlide(){
+    ${'.slideshow-container').style.display = 'block';
+    ${'.slideshow-container').style.visibility = 'visible';
+}
+
+function hideSlide(){
+    ${'.slideshow-container').style.display = 'none';
+    ${'.slideshow-container').style.visibility = 'none';
+}
+
+
+<!script>
+
+

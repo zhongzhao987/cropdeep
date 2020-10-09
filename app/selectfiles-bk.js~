@@ -1,0 +1,1293 @@
+var url   = require('url');
+
+// Get the collection in the database
+var L8Collection = require('./models/l8collection');
+var ModisCanadaFootprint = require('./models/modis_canada_footprint');
+var CanadaMod11A2 = require('./models/canada_mod11a2');
+var CanadaMod09Q1 = require('./models/canada_mod09q1');
+var CanadaMod13Q1 = require('./models/canada_mod13q1');
+
+var http = require('http');
+var queryString = require('querystring');
+var async = require('async');
+
+var utils = require('./utils');
+
+var buildLocationList = function(results, dis) {
+    var arr = [];
+    var uniqtimes = [];
+    results.forEach(function(doc) {
+	    console.log("filename: " + doc.filename);
+	    
+	    // only handle t1 type now
+	    if( doc.filename.indexOf("_T1") !== -1){
+	    
+		var geom = doc.geometry; 
+		var coords = geom.coordinates;
+		//console.log("coordinates length: " + coords.length);
+		var coordinates = coords[0];
+
+		var array = [];
+		array.push(coordinates[0].slice());
+		array.push(coordinates[1].slice());
+		array.push(coordinates[2].slice());
+		array.push(coordinates[3].slice());
+		array.push(coordinates[4].slice());
+		//coordArray.push(array.slice());
+
+		var imagefile   = process.env.RASTER_DATA_DIR;
+		//var imagefile = "C:\webs\node-todo\node-todo-master\data";
+		//console.log("raster dir: " + imagefile);
+
+		var filename = doc.filename;
+		var instr = filename.split("/");
+		var len = instr.length;
+		if( len == 1 )
+		    instr = filename.split("\\");
+	    
+		var bExt = false;
+		var timeseg = "";
+		if( len > 1 ){
+		    var basename = instr[len-2];
+		    //console.log("basename: " + basename);
+		    
+		    // find time in the base name, only get one image for one time 
+		    // because files may come from different path and rows and 
+		    // duplicated
+		    var namesegs = basename.split("_");
+		    timeseg = namesegs[3];
+		    //console.log("File Timing: " + timeseg);
+		    if( uniqtimes.indexOf(timeseg) < 0 ){
+			uniqtimes.push(timeseg);
+		    
+			var imgname = basename + "_rgb.tif";
+			//console.log( "imagefile: " + imgname);
+
+			imagefile = imagefile.concat( "/l8/collection/rgb/");
+			imagefile = imagefile.concat( imgname);
+		
+			//console.log("inputFile: " + filename);
+			//console.log("imageFile: " + imagefile);
+		
+			var fs = require('fs');
+			bExt = fs.existsSync(imagefile);
+		
+			//console.log("File existing: " + bExt);
+		    }
+		}
+
+		if( bExt == true ){
+
+		    arr.push({
+			    "distance": String(dis), 
+				"filename": String(doc.filename),
+				"imagename": String(imagefile),
+				"cloud": String(doc.cloud),
+				"timeseg": String(timeseg),
+				"date": String(doc.date),
+				"_id": String(doc._id)
+		    
+			});
+		}
+	    }
+    });
+
+    // need to reorder file name base on the time
+    var loc = [];
+    var count = 0;
+    //console.log("data len: " + arr.length);
+    console.log("array: " + arr);
+    
+    var index1 = 0;
+    while( arr.length > 0 ){
+	if( arr.length == 1 ){
+	    var obj0 = Object(arr[0]);
+	    loc.push({
+		    "distance": String(obj0.distance), 
+			"filename": String(obj0.filename),
+			"imagename": String(obj0.imagename),
+			"cloud": String(obj0.cloud),
+		        "timeseg": String(obj0.timeseg),
+			"date": String(obj0.date),
+			"_id": String(obj0._id)
+		    
+			});
+	    arr.splice(0,1);
+
+	    //console.log("Loc pushed: " + count);
+	    //console.log("pushed time: " + String(obj0.timeseg));
+	    
+	}
+	else {	
+	    var index = -1;
+	    var i,timeseg1;
+	    var obj = Object(arr[0]);
+	    timeseg1 =  String(obj.timeseg);
+	    index = 0;
+	    for( i = 1; i < arr.length; i++) {
+		var obj1 = Object(arr[i]);
+		if( obj1.timeseg  <  timeseg1 ){
+		    timeseg1 = obj1.timeseg;
+		    index  = i;
+		}
+	    }
+	    var obj2 = Object(arr[index]);
+	    
+	    //console.log("index1: " + index1);
+	    //console.log("filename: " + String(obj2.imagename));
+	    index1++;
+
+	    loc.push({
+		    "distance": String(obj2.distance), 
+			"filename": String(obj2.filename),
+			"imagename": String(obj2.imagename),
+			"cloud": String(obj2.cloud),
+		        "timeseg": String(obj2.timeseg),
+			"date": String(obj2.date),
+			"_id": String(obj2._id)
+
+			});
+	    arr.splice(index,1);
+
+	    //console.log("Loc pushed: " + count);
+	    //console.log("pushed time: " + String(obj2.timeseg));
+	}
+	count++;
+	//console.log("loop count: " + count);
+	//console.log("data len: " + arr.length);
+	//console.log("Array left: " + arr);
+
+    }
+
+    console.log("Filse found: " + loc.length);
+  
+    return loc;
+};
+
+var buildNameList = function(results, dis, optype) {
+
+    console.log("\nIn BuildNameList\n");
+
+    var arr = [];
+    var length = results.length;
+    
+    for( var i = 0; i < length; i++ ){
+	var otime = results[i].otime;
+	var name = results[i].filename;
+	var len = name.length;
+	var imagefile;
+
+	if( optype == "temperature" ){
+	    var basename = name.substring(0, len-4);
+	    // change directory
+	    var basename1 = basename.replace("download", "output");
+
+	    /*
+	      temperature file: C:\images\modis\download\mod11a2\canada\MOD11A2.A2017305.h12v04.006.2017314042610.hdf
+	      Image file: C:\images\modis\output\mod11a2\canada\MOD11A2.A2017305.h12v04.006.2017314042610_temperature.tif
+	    */
+
+	    console.log("temperature file: " + name);
+	    console.log("temperature base file: " + basename1);
+	    imagefile = basename1 + "_temperature.tif";
+	}
+	else if( optype == "reflectance" || optype == "ndvi"){
+	    imagefile = name;
+	}
+	else
+	    continue;
+
+	console.log("Image file: " + imagefile);
+	
+	var fs = require('fs');
+	var bExt = fs.existsSync(imagefile);
+
+	console.log("File exist: " + bExt);
+
+	if( bExt )
+	    arr.push({
+		    "distance": String(dis), 
+			"filename": String(name),
+			"imagename": String(imagefile),
+			"timeseg": String(otime)
+			});
+    }
+    return arr;
+};
+
+
+function findTemperatureFiles(ModisFootprint,
+			      CanadaMod11A2,
+			      lng, lat, distance, next){
+    var data = [];
+    var zone = [];
+
+    async.series([
+		  function(callback){
+		      console.log("Footprint searching");
+		      ModisFootprint.find({
+			      "geometry":{
+				  "$geoIntersects":{
+				      "$geometry":{
+					  "type":"Point",
+					      "coordinates":[lng*0.01745329252,lat*0.01745329252]
+					      }
+				  }
+			      }
+			  }, function(err, docs){
+			      console.log("Searching zone in DB");
+			      if(err){
+				  callback(err);
+			      } 
+			      else {		
+				  for( var i = 0; i < docs.length; i++ )
+				      zone.push(docs[i].zone);
+				  console.log("zone length: " + docs.length);
+				  if( zone.length == 0 )
+				      callback("No zone found");
+				  else
+				      callback();
+			      }
+			  }
+			  );
+		  },
+		  function(callback){
+		      //console.log("zone found: " + zone[0]);
+		      CanadaMod11A2.find( { zone: zone[0] }, function( err, docs ){
+			      if(err)
+				  callback(err);
+			      else {
+				  console.log("in Mod11A2:" + docs.length);
+				  data.push(docs);
+				  callback();
+			      }
+			  }
+			  );
+		  }
+		  ], function(err){
+		     if( err )
+			 return next(err);
+		     else if( data.length == 0 ){
+			 err = "Cannot find temperature files";
+			 console.log(err);
+			 next(err);
+		     }
+		     else {
+			 next(null, data[0]);
+		     }
+		 });
+};
+
+function findReflectanceFiles(ModisFootprint,
+			      CanadaModDB,
+			      lng, lat, distance, next){
+    var data = [];
+    var zone = [];
+
+    async.series([
+		  function(callback){
+		      console.log("Footprint searching");
+		      ModisFootprint.find({
+			      "geometry":{
+				  "$geoIntersects":{
+				      "$geometry":{
+					  "type":"Point",
+					      "coordinates":[lng*0.01745329252,lat*0.01745329252]
+					      }
+				  }
+			      }
+			  }, function(err, docs){
+			      console.log("Searching zone in DB");
+			      if(err){
+				  callback(err);
+			      } 
+			      else {		
+				  for( var i = 0; i < docs.length; i++ )
+				      zone.push(docs[i].zone);
+				  console.log("zone length: " + docs.length);
+				  if( zone.length == 0 )
+				      callback("No zone found");
+				  else
+				      callback();
+			      }
+			  }
+			  );
+		  },
+		  function(callback){
+		      //console.log("zone found: " + zone[0]);
+		      CanadaModDB.find( { zone: zone[0] }, function( err, docs ){
+			      if(err)
+				  callback(err);
+			      else {
+				  console.log("in Mod09Q1:" + docs.length);
+				  data.push(docs);
+				  callback();
+			      }
+			  }
+			  );
+		  }
+		  ], function(err){
+		     if( err )
+			 return next(err);
+		     else if( data.length == 0 ){
+			 err = "Cannot find files";
+			 console.log(err);
+			 next(err);
+		     }
+		     else {
+			 next(null, data[0]);
+		     }
+		 });
+};
+	
+function findMODISFiles(ModisFootprint,
+		       CanadaModDB,
+		       lng, lat, distance, next){
+    var data = [];
+    var zone = [];
+
+    async.series([
+		  function(callback){
+		      console.log("Footprint searching");
+		      ModisFootprint.find({
+			      "geometry":{
+				  "$geoIntersects":{
+				      "$geometry":{
+					  "type":"Point",
+					      "coordinates":[lng*0.01745329252,lat*0.01745329252]
+					      }
+				  }
+			      }
+			  }, function(err, docs){
+			      console.log("Searching zone in DB");
+			      if(err){
+				  callback(err);
+			      } 
+			      else {		
+				  for( var i = 0; i < docs.length; i++ )
+				      zone.push(docs[i].zone);
+				  console.log("zone length: " + docs.length);
+				  if( zone.length == 0 )
+				      callback("No zone found");
+				  else
+				      callback();
+			      }
+			  }
+			  );
+		  },
+		  function(callback){
+		      //console.log("zone found: " + zone[0]);
+		      CanadaModDB.find( { zone: zone[0] }, function( err, docs ){
+			      if(err)
+				  callback(err);
+			      else {
+				  console.log("in ModDB:" + docs.length);
+				  data.push(docs);
+				  callback();
+			      }
+			  }
+			  );
+		  }
+		  ], function(err){
+		     if( err )
+			 return next(err);
+		     else if( data.length == 0 ){
+			 err = "Cannot find files";
+			 console.log(err);
+			 next(err);
+		     }
+		     else {
+			 next(null, data[0]);
+		     }
+		 });
+};
+	
+	     
+/*
+ multiple queries:
+ 1. build temp input and output file for GDAL exe commands
+ 2. run GDAL commands
+ 3. get json object from each GDAL run
+ 4. organize them and send back to client
+*/
+
+function getDataFromFiles(dataFiles, lng, lat, distance, beginning, timeInterval,res){
+    
+    console.log("\nIn GETDATAFROMFILLE\n");
+
+    if( dataFiles.length == 0 ){
+	dataJson.error = "Cannot find files to processing";
+	res.json(dataJson);
+    }
+
+    // create temp files for input and output for GDAL exec
+    var fs = require('fs');
+    var temp = require('temp');
+
+    var l8Name, l8Outname, tempeName, tempeOutname;
+    var ndviName, ndviOutname, reflectName, reflectOutname;
+
+    for( var i = 0; i < dataFiles.length; i++ ){
+	if( dataFiles[i].operatetype == "L8Image" ){
+	    l8Name = temp.path({suffix: '.txt'});
+	    l8Outname = temp.path({suffix: '.txt'});
+	}
+	else if(dataFiles[i].operatetype == "temperature" ){
+	    tempeName = temp.path({suffix: '.txt'});
+	    tempeOutname = temp.path({suffix: '.txt'});
+	}
+	else if(dataFiles[i].operatetype == "reflectance" ){
+	    reflectName = temp.path({suffix: '.txt'});
+	    reflectOutname = temp.path({suffix: '.txt'});
+	}
+	else if(dataFiles[i].operatetype == "ndvi" ){
+	    ndviName = temp.path({suffix: '.txt'});
+	    ndviOutname = temp.path({suffix: '.txt'});
+	}
+	console.log("Index: " + i);
+    }
+    
+    // loop each query type
+    var dataJson = {};
+    dataJson.L8Image = null;
+    for( var i = 0; i < dataFiles.length; i++ ){
+	var docs = dataFiles[i].body;
+	var type = dataFiles[i].operatetype;
+
+	console.log("Loop operation type: " + type);
+
+	var exename;
+	if( type == "L8Image" ){
+	    
+	    console.log("\nIn L8IMAGE: " + i);
+
+	    dataJson.L8Image = null;
+	    var list = buildLocationList( docs, distance);
+	    if( list.length > 0 ){
+		exename = buildExeCommand( list, lng, lat, distance, 
+					   l8Name, l8Outname, type,
+					   beginning, timeInterval);
+		console.log("EXENAME: " + exename);
+		if( exename != "" ){
+		    var imgData = runGetDataCommand(exename, l8Outname, list, type);
+		    if( imgData.length > 0 )
+			dataJson.l8image = imgData[0];
+		    
+		}
+	    }
+	}
+	else if( type == "temperature" ||
+		 type == "reflectance" ||
+		 type == "ndvi" ){
+	    
+	    console.log("\nIn Modis Temp/Ref/NDVI: " + i);
+
+	    dataJson.temperature = null;
+	    dataJson.reflectance = null;
+	    dataJson.ndvi = null;
+	    var list = buildNameList( docs, distance, type);
+	    console.log("Modis file size: " + list.length);
+	    if( list.length > 0 ){
+		if(  type == "temperature" )
+		    exename = buildExeCommand( list, lng, lat, distance, 
+					   tempeName, tempeOutname, type,
+					   beginning, timeInterval);
+		else if( type == "reflectance" )
+		    exename = buildExeCommand( list, lng, lat, distance, 
+					   reflectName, reflectOutname, type,
+					   beginning, timeInterval);
+		else
+		    exename = buildExeCommand( list, lng, lat, distance, 
+					   ndviName, ndviOutname, type,
+					   beginning, timeInterval);
+
+		console.log("EXENAME: " + exename);
+		if( exename != "" ){
+		    var imgData;
+		    if(  type == "temperature" )
+			imgData = runGetDataCommand(exename, tempeOutname, list, type);
+		    else if(  type == "reflectance" )
+			imgData = runGetDataCommand(exename, reflectOutname, list, type);
+		    else
+			imgData = runGetDataCommand(exename, ndviOutname, list, type);
+		    if( imgData.length > 0 ){
+			if( type == "temperature" )
+			    dataJson.temperature = imgData[0];
+			else if(  type == "reflectance" )
+			    dataJson.reflectance = imgData[0];
+			else
+			    dataJson.ndvi = imgData[0];
+		    }
+		}
+	    }
+	}
+    }
+    
+    var bFound = false;
+    for( var i = 0; i < dataFiles.length; i++ ){
+	type = dataFiles[i].operatetype;
+	if( type == "L8Image" && dataJson.l8image != null ){
+	    bFound = true;
+	    break;
+	}
+	else if( type == "temperature" && dataJson.temperature != null ){
+	    bFound = true;
+	    break;
+	}
+	else if( type == "reflectance" && dataJson.reflectance != null ){
+	    bFound = true;
+	    break;
+	}
+	else if( type == "ndvi" && dataJson.ndvi != null ){
+	    bFound = true;
+	    break;
+	}
+    }
+    if( bFound == false )
+	dataJson.error = "Cannot find data";
+    else
+	dataJson.error = "None";
+   
+    res.json(dataJson);
+};
+   
+
+var FindImages = function ( imageDB,  lng, lat, distance, next){
+
+    console.log("In Image DB: ");
+    
+    var itemList = [];
+    async.parallel([ function(callback) {
+		imageDB.aggregate([{
+			    $geoNear: {
+				near: { type: "Point", coordinates: [ lng , lat ] },
+				maxDistance: distance,
+				distanceField: "dist.calculated",
+				query: {
+				    "geometry":{
+					"$geoIntersects":{
+					    "$geometry":{
+						"type":"Point",
+						"coordinates":[
+							       lng,
+							       lat
+							       ]
+					    }
+					}
+				    }
+				},
+				spherical: true
+
+			    }
+			}
+			],function(err, docs){
+			console.log("in DB searching");
+			if(err)
+			    callback(err);
+			else {
+			    itemList.push(docs);
+			    callback(); 
+			}
+		    }
+		    ); // aggregate
+	    }
+	    ],function(err) {
+	    if (err) 
+		next(err);
+	    else 
+		next(null, itemList);});		
+};
+
+function FindFilesInZone(CanadaMod, ozones, next){
+
+    var itemList = [];
+
+    if( ozones.length > 0 ){
+	var zone = ozone[0];
+	var itemList = new Array();
+	CanadaMod.find( { zone: ozone }, function( err, docs ){
+		if(err)
+		    next(itemList);
+		else {
+		    docs.forEach(function(doc) {
+			var imgFile = [];
+			imgFile.push(doc.otime);
+			imgFile.push(doc.filename);
+			itemList.push(imgFile);
+			}
+			);
+		    
+		    next(null, itemList);
+		}
+	    }
+	    );
+    }
+    else{
+	var err = "No zone found.";
+	next(err, itemList);
+    }
+};
+		
+
+var buildExeCommand = function( list, lng, lat, distance,
+				tempName, outName, type,
+				 beginning, timeInterval){
+   
+    var filenames = [];
+
+    console.log(" in buildExeCommand.");
+  			    
+    // build the contents of string for input file
+    var strline = "TYPE:Radius";
+    strline += " " + String(lat);
+    strline += " " + String(lng);
+    strline += " " + String(distance);
+
+    for( var i = 0; i < list.length; i++ ){
+	var obj = Object(list[i]);
+	strline += " " + obj.imagename;
+    }
+			    
+    // save to the input file
+    var fs = require('fs');
+    var bSuccess = true;
+    try{
+	fs.writeFileSync(tempName, strline);
+    }catch (e){
+	console.log("Cannot write file ", e);
+	return "";
+    }
+    
+    // found the output file
+    console.log("Files to write: " + strline);
+				    
+    // set GDAL exec
+    var exename;
+    if( type == "L8Image" )
+	exename = "C:/rsa/build64-2015/rsa/x64/Debug/l8rgbclip.exe ";
+    else if( type == "S2Image" )
+	exename = "C:/rsa/build64-2015/rsa/x64/Debug/s2rgbclip.exe ";
+    else if( type == "S1Image" )
+	exename = "C:/rsa/build64-2015/rsa/x64/Debug/s1clip.exe ";
+    else if( type == "temperature" )
+	exename = "C:/rsa/build64-2015/rsa/x64/Debug/modisclip.exe ";
+    else if( type == "reflectance" )
+	exename = "C:/rsa/build64-2015/rsa/x64/Debug/modisclip.exe ";
+     else if( type == "ndvi" )
+	exename = "C:/rsa/build64-2015/rsa/x64/Debug/modisclip.exe ";
+    else
+	return "";
+   
+    if( type == "temperature" )
+	exename = exename + tempName + " " + outName + " temperature" + " " + timeInterval + " " +  beginning;  
+    else if( type == "reflectance" || type == "ndvi" )
+	exename = exename + tempName + " " + outName + " reflectance" + " " + timeInterval + " " +  beginning;  
+    else
+	exename = exename + tempName + " " + outName;
+
+    console.log("TYPE: " + type);
+    console.log("input File: " + tempName);
+    console.log("out File: " + outName);
+
+    console.log("running executable");
+    console.log(exename);
+    
+    return exename;
+};
+
+var AddDataToJson = function(dataJson, outFiles, data, type, imgList){
+
+  for( var i = 0; i < outFiles.length; i+=2){
+      // get input file name
+      var rgbname = outFiles[i];
+      var outname = outFiles[i+1];
+	
+      var val1, val2, timeseg = "", bFound = false;
+      if( data.length == 1 ){
+	  val1 = data[i];
+      }
+      else if( data.length == 2 ){
+	  val1 = data[i];
+	  val2 = data[i+1];
+      }
+      // find the time stamp for this image
+      for( var j = 0; j < imgList.length; j++ ){
+	  var obj = Object(imgList[j]);							
+	  if( rgbname == obj.imagename ){
+	      bFound = true;
+	      timeseg = obj.timeseg;
+	      break;
+	  }
+      }
+      if( bFound == true ){
+	  // add data and time to json
+	  var bitmap = fs.readFileSync(outname);
+	  var buf = new Buffer(bitmap).toString('base64');
+	  if( type == "temperature" ){
+	      var img = {
+		  time: timeseg,
+		  rgbfile:rgbname,
+		  imgdata:buf,
+		  ht:val1,
+		  lt:val2
+	      }
+	  }
+	  else if( type == "ndvi" && data.length == 1 ){
+	      var img = {
+		  time: timeseg,
+		  rgbfile:rgbname,
+		  imgdata:buf,
+		  ndvi:val1,
+	      }
+	  }
+	  else {
+	      var img = {
+		  time: timeseg,
+		  rgbfile:rgbname,
+		  imgdata:buf
+	      }
+	  }
+	  dataJson.data.push(img);
+      }
+  }
+};
+
+var runGetDataCommand = function(exename, outname, imgList, type){
+    	
+    var itemList = [];
+
+    // run exec
+    var cp = require('child_process');  
+    cp.execSync(exename);
+    console.log("executable finished");
+
+    var outFiles = [];
+    var fs = require('fs');
+    var stats = fs.existsSync(outname);
+		
+    console.log("Output file status: ", stats);
+
+    if( stats != true ){
+	var err = "Cannot found output data file.";
+	return itemList;
+    }
+    else{
+				
+	console.log("Read output file: ");
+	var outFiles = [];
+
+	var lines = fs.readFileSync(outname, 'utf-8')
+	.split('\n')
+	.filter(Boolean);
+
+	var data2 = [];
+	var eviFiles = [];
+
+	if( type != "ndvi" ){
+	    for( var i = 0; i < lines.length; i++ ){
+		var line = lines[i];
+	 
+		var arrays = line.trim().split(";");
+		console.log("Line seg length: " + arrays.length);
+	    
+	    
+		if( arrays.length < 2 ||  arrays[1] == "NONE" )
+		    continue;
+	    
+		outFiles.push(arrays[0]);   // arrays[0] - original file
+		outFiles.push(arrays[1]);   // arrays[1] - out bmp file name
+
+		if( type == "temperature" ){
+		    data2.push(arrays[2]);
+		    data2.push(arrays[3]);
+		}
+	    }
+	}
+	else{
+	    // it has two lines structures:
+	    // ndvi line + ndvi value
+	    // evi line
+	    for( var i = 0; i < lines.length; i+=2 ){
+		var line = lines[i];
+		var arrays = line.trim().split(";");
+		console.log("Line seg length: " + arrays.length);
+		var line2 = lines[i+1];
+		var arrays2 = line.trim().split(";");
+		console.log("Line seg length: " + arrays.length);
+		if( arrays.length < 4 ||  arrays2.length < 2 )
+		    continue;
+
+		outFiles.push(arrays[0]);   // arrays[0] - original file
+		outFiles.push(arrays[1]);   // arrays[1] - out bmp file name
+		data2.push(arrays[2]);      // ndvi data
+	   	
+		// get evi files
+		eviFiles.push(arrays2[0]);   // arrays[0] - original file
+		eviFiles.push(arrays2[1]);   // arrays[1] - out bmp file name
+	    }
+	}
+
+	console.log("Outfiles length: " + outFiles.length);
+							
+	// build the json object
+	if( outFiles.length > 0 ){
+	    var dataJson = {};
+	    dataJson.width = 128;
+	    dataJson.height = 128;
+	    dataJson.imgtype = "bmp";
+	    dataJson.operatetype = type;
+	    dataJson.error = "None";
+	    dataJson.data = [];
+	    
+	    AddDataToJson(dataJson, outFiles, data2, type, imgList);
+	    
+	    if( type == "ndvi" ){
+		AddDataToJson(dataJson, eviFiles, [], type, imgList);
+	 		
+	    // send back 
+	    console.log("json length: " + dataJson.data.length);
+	    if( dataJson.data.length > 0 )
+		itemList.push(dataJson);
+	    return itemList;
+	    
+	}
+	else
+	    return itemList;					
+    }		 
+};
+
+var buildObjLocationList = function(results, dis) {
+    var locations = [];
+    results.forEach(function(doc) {
+        locations.push({
+            distance: dis, 
+            filename: doc.obj.filename,
+            date: doc.obj.date,
+            cloud: doc.obj.cloud,
+            _id: doc.obj._id
+        });
+    });
+    return locations;
+};
+
+// Entry point for scene selection
+var runCanEnv = {};
+module.exports = function SelectFiles(app, req, res) { 
+
+    console.log("In Path: " + req.path);
+
+    if( req.path == "/api/maploc") {
+	console.log("In GET");
+
+	if(  runCanEnv.length == 0 ){
+	    runCanEnv.lat = 0.0;
+	    runCanEnv.lon = 0.0;
+	    runCanEnv.init = false;
+	    runCanEnv.sensorLoaded = false;
+	    runCanEnv.temperatureLoaded = false;
+	    runCanEnv.reflectanceLoaded = false;
+	    runCanEnv.ndviLoaded = false;
+	}
+	    
+
+	//console.log(L8Collection.count());
+  
+	var distance=-1.0, lng, lat, sensor, cloud, sttime,endtime;
+	var beginning, timeInterval;
+	var fileobj = [];
+	var obj;
+	var temperature, reflectance, ndvi;
+
+	// get query params as object
+	if (req.url.indexOf('?') >= 0) {
+	    oQueryParams = queryString.parse(req.url.replace(/^.*\?/, ''));
+
+	    var params = require('util').inspect(oQueryParams);
+	    obj = eval("(function(){return " + params + ";})()");
+	    console.log(obj.sensor);
+	    console.log(obj.longitude);
+	    console.log(obj.latitude);
+	    console.log(obj.starttime);
+	    console.log(obj.endtime);
+	    console.log(obj.cloud);
+	    console.log(obj.distance);
+	    console.log(obj.queryType);
+	    console.log(obj.polygon);
+	    console.log(obj.temperature);
+	    console.log(obj.ndvi);
+	    console.log(obj.reflectance);
+
+	    distance = Number(obj.distance);
+	    lng = Number(obj.longitude);
+	    lat = Number(obj.latitude);
+	    sensor = obj.sensor;
+	    cloud = obj.cloud;
+	    sttime = obj.starttime;
+	    endtime = obj.endtime;
+
+	    beginning =  obj.beginning;
+	    timeInterval = obj.timeInterval;
+
+	    temperature = obj.temperature;
+	    reflectance = obj.reflectance;
+	    ndvi = obj.ndvi;
+
+	    queryType = obj.queryType;
+	    poly = obj.polygon;
+
+	    if( runCanEnv.init == false ){
+		runCanEnv.sensor = sensor;
+		runCanEnv.sensorLoaded = false;
+		runCanEnv.temperatureLoaded = false;
+		runCanEnv.reflectanceLoaded = false;	    
+		runCanEnv.lat = lat;
+		runCanEnv.lon = lng;
+		runCanEnv.init == true;
+	    }
+	    else {
+		if( runCanEnv.lat != lat ||
+		    runCanEnv.lon != lng ){
+		    runCanEnv.lat = lat;
+		    runCanEnv.lon = lng;
+		    runCanEnv.sensor = sensor;
+		    runCanEnv.sensorLoaded = false;
+		    runCanEnv.temperatureLoaded = false;
+		    runCanEnv.reflectanceLoaded = false;
+		    runCanEnv.ndviLoaded = false;
+		}
+	    }
+	    
+	}
+
+	if( queryType == "near" ){
+	    
+	    if( distance == 0 ){
+		var dataJson = {};
+		dataJson.error = "Distance not right";
+		res.json(dataJson);
+	    }
+
+	    console.log("Temperature: " + temperature);
+	    console.log("Sensor: " + sensor);
+	    console.log("Reflectance: " + reflectance);
+	    console.log("NDVI: " + ndvi);
+	   
+	    // find temperature images
+	    var databaseFiles = [];
+	    var data = [];
+
+	    if(  runCanEnv.temperatureLoaded == false && temperature == "true"  && 
+		 runCanEnv.sensorLoaded == false && sensor == "L8" ){
+
+		console.log("in temperatue ans sensor mode:");
+
+		async.parallel([ 
+				function(callback) {
+				    FindImages( L8Collection,  lng, lat, distance, function(err, docs){
+					    if(err)
+						callback(err);
+					    else{
+						var imgFiles = {};
+						imgFiles.operatetype = "L8Image";
+						imgFiles.body = docs[0];
+						data.push(imgFiles);
+						callback();
+					    }
+					});
+				},
+				function(callback) {
+				    findTemperatureFiles(ModisCanadaFootprint,
+							 CanadaMod11A2,
+							 lng, lat, distance, function(err, docs){
+							     console.log("temperature data:");
+							     //console.log(docs);
+							     if(err)
+								 callback(err);
+							     else{								 
+								 var tempFiles = {};
+								 tempFiles.operatetype = "temperature";
+								 tempFiles.body = docs;
+								 data.push(tempFiles);
+								 callback();
+							     }
+							 });
+				}
+				 ], function(err){
+				   var dataJson = {};
+				   var length = data.length;
+				   if( err ){
+				       console.log("Query DB error: " + err);
+				       dataJson.error = "Cannot find object";
+				       res.json(dataJson);
+				   }
+				   else if ( length == 0 ){
+				       console.log("Query DB without records");
+				       dataJson.error = "Data empty";
+				       res.json(dataJson);
+				   }
+				   else {
+				       // process data
+				       console.log("Data size: " + length);	
+				       runCanEnv.sensorLoaded = true;
+				       runCanEnv.temperatureLoaded = true;
+				       getDataFromFiles(data, lng, lat, distance, beginning, timeInterval, res);
+				   }
+			       }
+			       );
+	    }
+	    else if(  runCanEnv.temperatureLoaded == false && temperature == "true" ){
+
+		console.log("in TEMPERATAURE:");
+
+		async.parallel([ 
+				function(callback) {
+				    findTemperatureFiles(ModisCanadaFootprint,
+							 CanadaMod11A2,
+							 lng, lat, distance, function(err, docs){
+							     console.log("temperature data:");
+							     //console.log(docs);
+							     if(err)
+								 callback(err);
+							     else{								 
+								 var tempFiles = {};
+								 tempFiles.operatetype = "temperature";
+								 tempFiles.body = docs;
+								 data.push(tempFiles);
+								 callback();
+							     }
+							 });
+				}
+				 ], function(err){
+				   var dataJson = {};
+				   var length = data.length;
+				   if( err ){
+				       console.log("Query DB error: " + err);
+				       dataJson.error = "Cannot find object";
+				       res.json(dataJson);
+				   }
+				   else if ( length == 0 ){
+				       console.log("Query DB without records");
+				       dataJson.error = "Data empty";
+				       res.json(dataJson);
+				   }
+				   else {
+				       // process data
+				       console.log("Data size: " + length);
+				       runCanEnv.temperatureLoaded = true;
+				       getDataFromFiles(data, lng, lat, distance, beginning, timeInterval, res);
+				   }
+			       }
+			       );
+	    }
+	    else if(  runCanEnv.reflectanceLoaded == false &&  reflectance == "true" ){
+
+		console.log("in REFLECTANCE:");
+
+		async.parallel([ 
+				function(callback) {
+				    findMODISFiles(ModisCanadaFootprint,
+							 CanadaMod09Q1,
+							 lng, lat, distance, function(err, docs){
+							     console.log("reflectance data:");
+							     //console.log(docs);
+							     if(err)
+								 callback(err);
+							     else{								 
+								 var tempFiles = {};
+								 tempFiles.operatetype = "reflectance";
+								 tempFiles.body = docs;
+								 data.push(tempFiles);
+								 callback();
+							     }
+							 });
+				}
+				 ], function(err){
+				   var dataJson = {};
+				   var length = data.length;
+				   if( err ){
+				       console.log("Query DB error: " + err);
+				       dataJson.error = "Cannot find object";
+				       res.json(dataJson);
+				   }
+				   else if ( length == 0 ){
+				       console.log("Query DB without records");
+				       dataJson.error = "Data empty";
+				       res.json(dataJson);
+				   }
+				   else {
+				       // process data
+				       console.log("Data size: " + length);
+				       runCanEnv.reflectanceLoaded = true;
+				       getDataFromFiles(data, lng, lat, distance, beginning, timeInterval, res);
+				   }
+			       }
+			       );
+	    }
+	    else if(  runCanEnv.ndviLoaded == false &&  ndvi == "true" ){
+
+		console.log("in NDVI:");
+
+		async.parallel([ 
+				function(callback) {
+				    findMODISFiles(ModisCanadaFootprint,
+							 CanadaMod13Q1,
+							 lng, lat, distance, function(err, docs){
+							     console.log("ndvi data:");
+							     //console.log(docs);
+							     if(err)
+								 callback(err);
+							     else{								 
+								 var tempFiles = {};
+								 tempFiles.operatetype = "ndvi";
+								 tempFiles.body = docs;
+								 data.push(tempFiles);
+								 callback();
+							     }
+							 });
+				}
+				 ], function(err){
+				   var dataJson = {};
+				   var length = data.length;
+				   if( err ){
+				       console.log("Query DB error: " + err);
+				       dataJson.error = "Cannot find object";
+				       res.json(dataJson);
+				   }
+				   else if ( length == 0 ){
+				       console.log("Query DB without records");
+				       dataJson.error = "Data empty";
+				       res.json(dataJson);
+				   }
+				   else {
+				       // process data
+				       console.log("Data size: " + length);
+				       runCanEnv.ndviLoaded = true;
+				       getDataFromFiles(data, lng, lat, distance, beginning, timeInterval, res);
+				   }
+			       }
+			       );
+	    }
+	    else if(   runCanEnv.sensorLoaded == false && sensor == "L8" ){
+
+		console.log("in L8 mode: ");
+
+		FindImages( L8Collection,  lng, lat, distance, function(err, docs){
+			var dataJson = {};
+			if(err){
+			     console.log("Query DB error: " + err);
+			     dataJson.error = "Cannot find L8 files";
+			     res.json(dataJson);
+			}
+			else{
+			    
+			    //process data	       
+			    var coords = [];
+			    // decode file list
+			    var list = buildLocationList( docs[0], distance);
+			    if( list.length > 0 ){
+				// create temp file for input and output for GDAL exec
+				var fs = require('fs');
+				var temp = require('temp');
+				var tempName = temp.path({suffix: '.txt'});
+				var outName = temp.path({suffix: '.txt'});
+				var type = "L8Image";
+				exename = buildExeCommand( list, lng, lat, distance, 
+							   tempName, outName, type,
+							    beginning, timeInterval);
+				console.log("out filename: " + outName);
+				console.log("outexename: " + exename);
+				if( exename != "" ){
+				    var imgData = runGetDataCommand(exename, outName, list, type);
+				    if( imgData.length > 0 ){
+					dataJson.error = "None";
+					dataJson.l8image = imgData[0];
+					runCanEnv.sensorLoaded = true;
+					res.json(dataJson);
+				    }
+				    else{
+					dataJson.error = "Cannot get image data";
+					res.json(dataJson);
+				    }
+				}
+				else{
+				    dataJson.error = "Exe name empty";
+				    res.json(dataJson);
+				}
+			    }
+			    else{
+				dataJson.error = "Cannot find files for the given position";
+				res.json(dataJson);
+			    }
+			}
+		    });
+	    }
+	}
+	else {
+	    console.log("In within");
+
+	    // for within query
+	    L8Collection.find({
+		    geometry: {
+			$geoWithin: {
+			    $geometry:{
+				type: "Polygon",
+				    coordinates:[[
+					       [-124.0,48.0],
+					       [-140.0,60.0],
+					       [-140.0,65.5],
+					       [-58.6, 65.5],
+					       [-52.0, 45.8],
+					       [-82,7, 42.0],
+					       [-95.0, 49.0],
+					       [-124.0,48.0]
+					       ]]
+				    }
+			}
+		    }
+		}, function(err, docs){
+		    console.log("in searching");
+		    if(err){
+			console.log(err);
+		    } else {
+			var coords = [];
+			var filenames = [];
+
+			// get two arrays of list and coordinates
+			var list = buildLocationList(docs, 0);
+			for( i = 0; i < list.length; i++ ){
+			    var strname = list[i].filename + "\n";
+			    console.log(strname);
+			    filenames.push(strname);
+			}
+		
+			var fs = require('fs');
+			
+			// always add a "'" between lines  - ?
+			var stream = fs.createWriteStream("C:/tmp/canada_l8.txt");
+			var count = 0;
+			for( i = 0; i < filenames.length; i++ ){
+			    if( filenames[i].search("_RT") < 0 ){
+				stream.write( filenames[i] );
+				count++;
+			    }
+			}
+			stream.end();
+			
+			// send data back to client
+			
+			console.log("Totol count:" + count);
+
+			res.json(docs);
+		    }
+		}
+		)
+		}
+
+	//res.json([{"name":"Hello Yun!"}]);
+
+    }
+    else
+	res.json([{"name":"Hello Yun!"}]);
+    
+};
+    

@@ -1,0 +1,363 @@
+var slideL8Index = 1;
+var slideTempIndex = 1;
+
+function  plusImageSlides(n) {
+    showSlides(slideL8Index += n, "L8Image");
+}
+
+function currentImageSlide(n) {
+    showSlides(slideL8Index = n, "L8Image");
+}
+
+function  plusTempSlides(n) {
+    showSlides(slideImageIndex += n, "Temperature");
+}
+
+function currentTempSlide(n) {
+    showSlides(slideTempIndex = n, "Temperature");
+}
+ 
+function addImages( index, total, data, time, slide, classA,textA){
+    var myslides = document.createElement("div");
+    myslides.setAttribute("class", classA );
+    myslides.setAttribute("align", "center");
+    var imgdata="data:image/bmp;base64,"+data;
+    var img1 = '<img src='+imgdata+'>';
+    $(img1).appendTo(myslides);
+
+    var text2 = '<div class=textA>'+time+'</div>';
+    $(text2).appendTo(myslides);
+
+    $('.slideshow-container').append(myslides);
+}
+
+function addSlideArrays(slide, type, slidePrev, slideNext, plusSlidesP, plusSlidesN, key1, key2 ){
+    if( type == "L8Image" )
+	$('<a class="slideprev" onclick="plusImageSlides(-1)">&#10094;</a><a class="slidenext" onclick="plusImageSlides(1)>&#10095;</a>').appendTo(slide);
+    else
+	$('<a class="tempslideprev" onclick="plusTempSlides(-1)">&#10096;</a><a class=tempslidenext onclick="plusTempSlides(1)>&#10097;</a>').appendTo(slide);
+}
+
+function addSlideDots(i, slidedot, currSlide, dotA){
+    var name = currSlide+"("+i+")";
+    //$('<span class=dotA onclick='+name+'></span>').appendTo(slidedot);
+}
+
+function displaySlide(index){
+    $('.slideshow-container')[index].style.display = 'block';
+    $('.slideshow-container')[index].style.visibility = 'visible';
+    //$('.dots')[index].style.display = 'block';
+    //$('.dots')[index].style.visibility = 'visible';
+}
+
+function  hideSlide(index){
+    $('.slideshow-container')[index].style.display = 'none';
+    $('.slideshow-container')[index].style.visibility = 'none';
+    //$('.dots')[index].style.display = 'none';
+    // $('.dots')[index].style.visibility = 'none';
+}
+
+function setSlideshow(result, type, images) {
+    
+    var imgCount = result.data.length;
+    var pixels = result.width;
+    var rows = result.height;
+    var sensor = result.sensor;
+    var distance = result.distance;
+   
+    var obj;
+    var i;
+    var strline = "";
+    for( i = 0; i < result.data.length; i++ ){
+	obj = result.data[i];
+	strline += obj.time + " ";
+	var data = obj.imgdata;
+	images.push(obj);
+    }
+    
+    var slides = document.getElementsByClassName("slideshow-container");
+    $('.slideshow-container').empty();
+    
+    var classA, textA;
+    var slidePrev, slideNext, slideSlidePrev, slideSlideNext;
+    var key1, key2;
+    var currSlide;
+    var dotClass, dotA;
+
+    if( type == "L8Image" ){
+	classA = "l8slide";
+	textA = "l8slidetext";
+	slidePrev = "l8slideprev";
+	slideNext = "l8slidenext";
+	slidePrevFunc = "l8slideplus(-1)";
+	slideNextFunc = "l8slideplus(1)";
+	key1 = "&#10094";
+	key2 = "&#10095";
+	dotClass = "l8dotclass";
+	dotA = "l8dot";
+	currSlide = "l8slidecurrent";
+    }
+    else if( type == "Temperature" ){
+	classA = "tempslide";
+	textA = "tempslidetext";
+	slidePrev = "tempslideprev";
+	slideNext = "tempslidenext";
+	slideSlidePrev = "tempslideplus(-1)";
+	slideSlideNext = "tempslideplus(1)";
+	key1 = "&#10096";
+	key2 = "&#10097";
+	dotClass = "tempdotclass";
+	dotA = "tempdot";
+	currSlide = "tempslidecurrent";
+    }
+  
+    for( i = 0; i < imgCount; i++ )
+	addImages( i+1, imgCount, 
+		   result.data[i].imgdata, 
+		   result.data[i].time, 
+		   slides,
+		   classA, 
+		   textA);
+
+    // add prev and next arraws
+    //var imgs = $('.mySlides');
+    addSlideArrays(slides, type, slidePrev, slidePrevFunc, slideNext, slideNextFunc, key1, key2 );
+ 
+    // add dots
+    /*
+    var dots = document.getElementsByClassName(dotClass);
+    var dotclass = "."+dotClass;
+    $(dotclass).empty();
+    for( i = 1; i <= imgCount; i++ ){
+	addSlideDots(i, dots, currSlide, dotA);
+    }
+    */
+}
+
+function showSlides(n, type){
+    var i;
+    
+    var classA, dotClass, dotA;
+    var slideIndex;
+    if( type == "L8Image" ){
+	classA = "l8slide";
+	dotA = "l8dot";
+    }
+    else if( type == "Temperature" ){
+	classA = "tempslide";
+	dotA = "tempdot";
+    }
+    
+    slideIndex = n;
+
+    var slides = document.getElementsByClassName(classA);
+    var dots = document.getElementsByClassName(dotA);
+    if (n > slides.length) 
+	{slideIndex = 1}
+    else if (n < 1) 
+	{slideIndex = slides.length}
+
+    if( type == "L8Image" ){
+	slideL8Index = slideIndex;
+    }
+    else if( type == "Temperature" ){
+	slideTempIndex = slideIndex;
+    }
+    for (i = 0; i < slides.length; i++) {
+	slides[i].style.display = "none";
+    }
+
+    /*
+    for (i = 0; i < dots.length; i++) {
+	dots[i].className = dots[i].className.replace(" active", "");
+    }
+    */
+
+    slides[slideIndex-1].style.display = "block";
+    slides[slideIndex-1].style.visibility = 'visible';
+    // dots[slideIndex-1].className += " active";
+} 
+
+
+function json2array(json){
+    var result = [];
+    var keys = Object.keys(json);
+    keys.forEach(function(key){
+        result.push(json[key]);
+    });
+    return result;
+}
+
+// query the server for the given point 
+$(document).ready(function(){
+    $("#selectedParams").click(function(){
+	    
+	    //alert("in Selec:" );
+
+	    var lng = $('#longitude').val();
+	    var lat = $('#latitude').val();
+	    var Ldistance = $('#distance').val();
+	    if( Ldistance == 0 )
+		Ldistance = 1250;
+	    else if( Ldistance == 1 )
+		Ldistance = 2500;
+	    else if( Ldistance == 2 )
+		Ldistance = 5000;
+	    else
+		alert( "distance wrong!");
+
+	    //var areacover = $('#areatocover').val();
+	    var Lsensor = $('#sensor').val();
+	    if(Lsensor ==0 )
+		Lsensor = "L8";
+	    else if( Lsensor==1)
+		Lsensor = "S1";
+	    else if( Lsensor==2)
+		Lsensor="S2";
+	    else
+		alert("Sensor wrong!");
+
+	    var Lcloud = $('#cloud').val();
+	    if( Lcloud == 0 )
+		Lcloud = 5;
+	    else if( Lcloud == 1 )
+		Lcloud = 10;
+	    else if( Lcloud == 2 )
+		Lcloud = 15;
+	    else if( Lcloud == 3 )
+		Lcloud = 20;
+	    else
+		Lcloud = 10;
+	    
+	    var Lsttime = $('#dp4').val();
+	    var Lendtime = $('#dp5').val();
+	   
+	    var surfRef =  $('#surfRef').val();
+	    var ndvi = $('#ndvi').val();
+	    var temperature = $('#surfTemp').is(':checked');
+	    var moisture = $('#surfMoist').val();
+	    var surfrad = $('#surfRad').val();
+	    var evaptrans = $('#evaptrans').val();
+	    var soiltype = $('#soilType').val();
+	    var dem = $('#dem').val();
+	    var precip =  $('#precip').val();
+	    var wind =  $('#wind').val();
+	    var drought =  $('#drought').val();
+	    var forcast =  $('#forcat').val();
+
+	    alert( "Temp: " + temperature );
+
+
+	    // for within polygon
+	    var poly = [];
+	    var operType = "near"; 
+	    if( operType == "within" )
+		{ 
+		    // canada boundary
+		    poly.push(-124.0);
+		    poly.push(48.0);
+		    poly.push(-140.0);
+		    poly.push(60.0);
+		    poly.push(-140.0);
+		    poly.push(65.5);
+		    poly.push(-58.6);
+		    poly.push(65.5);
+		    poly.push(-52.0);
+		    poly.push(45.0);
+		    poly.push(-82.7);
+		    poly.push(42.0);
+		    poly.push(-95.0);
+		    poly.push(49.0);
+		    poly.push(-124.0);
+		    poly.push(48.0);
+		};
+
+
+	    var mapROI = [];
+	    var obj = {
+		longitude: lng,
+		latitude: lat,
+		distance: Ldistance,
+		sensor : Lsensor,
+		cloud : Lcloud,
+
+		reflectance:surfRef,
+		ndvi:ndvi,
+		temperature:temperature,
+		moisture:moisture,
+		radiation:surfrad,
+		evap:evaptrans,
+		soiltype:soiltype,
+		dem:dem,
+		precipitation:precip,
+		wind:wind,
+		drought:drought,
+		forcast:forcast,
+	
+		starttime : Lsttime,
+		endtime : Lendtime,
+		// near - for normal query
+		// within - back process - given a polygon to find its inside documents
+	
+		queryType: operType,
+		polygon: poly
+	    };
+
+
+	    mapROI.push(obj);
+	    var jsonArray = JSON.parse(JSON.stringify(mapROI));
+	    
+	    var imageArray = [];
+	    var tempArray = [];
+	    
+	    alert("before GET");
+
+	    $.ajax({
+		    type: "GET",
+			crossDomain: true,
+			url: "/api/maploc",
+			data:  obj,
+			dataType: "json",
+			success: function (result) {
+				
+			var strline = "";
+			if( result.error == "None" ){
+			    var data = null;
+			    if( result.l8image != null )
+				data = result.l8image;
+				
+			    if( data.data.length > 0 ){
+				setSlideshow(data, "L8Image", imageArray);
+
+				displaySlide(0);
+				   setTimeout(function() {
+					   showSlides(0, "L8Image");
+				},0) ;
+			    }
+			 
+			    if( temperature == true && result.temperature != null ) {
+				data = result.temperature;
+			
+				if( data.data.length > 0 ){
+				    setSlideshow(data, "Temperature", tempArray);
+				    displaySlide(1);
+				}
+				
+				setTimeout(function() {
+					showSlides(1, "Temperature");
+				},0) ;
+
+				//alert("done");
+	    
+			    }
+			}
+			else {
+			    alert( result.error );
+			    }	
+			
+			//do somthing here
+		    }
+		});
+	     		       
+    });
+});

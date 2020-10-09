@@ -1,0 +1,208 @@
+// set up ======================================================================
+
+// node l8file.js C:\Users\Zhong\Downloads\l8-scene\scene_list create
+// or
+// node l8file.js D:\webs\node-todo\node-todo-master\data\raster\l8\collection\rgb\index.txt create-rgb
+
+
+/*
+
+Read AWS Landsat 8 scene_list (collection) into MongoDB table
+Each entry in scene_list is a file with multiple attributes with it
+
+productId,entityId,acquisitionDate,cloudCover,processingLevel,
+path,row,min_lat,min_lon,max_lat,max_lon,download_url
+
+- create a schema for collection
+- read file and split each line to an array
+- use meaningful attributes to create an instance 
+- save to collection
+
+- it is an async process, need time to close file (sync?)
+
+*/
+
+
+var filename = process.argv[2]; //value will be "filename"
+var createOP = process.argv[3]; //value will be "create or update"
+				
+var mongoose = require('mongoose'); 				// mongoose for mongodb
+mongoose.Promise = global.Promise;
+var port = process.env.PORT || 8080; 				// set the port
+var database = require('../config/database'); 			// load the database config
+var morgan = require('morgan');
+var bodyParser = require('body-parser');
+var methodOverride = require('method-override');
+
+// configuration ===============================================================
+// Connect to local MongoDB instance. 
+mongoose.connect(database.localUrl); 	//A remoteUrl is also available (modulus.io)
+
+// open database
+mongoose.connection.on('error', function () {
+  console.error('connection error', arguments);
+});
+
+mongoose.connection.once('open', function (){
+    console.log("Mongoose connection opened on process " + process.pid);
+});
+
+
+// set collection name
+var tblname = "l8collection";
+console.log("table name:", tblname);
+
+// create a schema for the collection
+var schema = new mongoose.Schema({
+	geometry : {
+	    type: {type: String},
+	    coordinates : []
+	},
+	filename : String,
+	date : Date,
+	cloud : Number
+	
+});
+
+// set index for the collection
+schema.index({geometry: '2dsphere'});
+
+// create collection
+var geoModel = mongoose.model(tblname, schema);
+
+if( createOP === "create" ){
+    var lineIndex = 0;
+    var arrays, length;
+    
+    // get readline objecct
+    var lineReader = require('readline').createInterface({
+	    input: require('fs').createReadStream(filename)
+	});
+
+    // read line one by one
+    lineReader.on('line', function (line) {
+	    console.log(lineIndex);
+	    // ignore the first row
+	    if( lineIndex > 0 ){
+		// token the line to string array - totally 12
+		arrays = line.trim().split(",");
+		/*
+		  build a polygon for the image footprint
+
+		  arrays[7] - min_lat
+		  arrays[8] - min_lon
+		  arrays[9] - max_lat
+		  arrays[10] - max_lon
+		
+		  console.log(Number(arrays[8]));
+		  console.log(Number(arrays[7]));
+		  console.log(Number(arrays[10]));
+		  console.log(Number(arrays[9]));
+		  console.log(arrays[11]);
+		  console.log(Date(arrays[2]));
+		  console.log(Number(arrays[3]));
+		*/
+		
+		length = arrays.length;
+		if( length > 0 && Number(arrays[3]) < 20 ){
+		    // create an instance - document
+		    var doc = new geoModel({
+			    geometry : {
+				type : 'Polygon',
+			        coordinates:[[[Number(arrays[8]),Number(arrays[7])],
+					    [Number(arrays[8]),Number(arrays[9])],
+					    [Number(arrays[10]),Number(arrays[9])],
+					    [Number(arrays[10]),Number(arrays[7])],
+					    [Number(arrays[8]),Number(arrays[7])]]]
+			    },
+			  
+			    filename : arrays[11],
+			    date : Date(arrays[2]),
+			    cloud : Number(arrays[3])
+			    
+			});
+		    // save to the collection
+		    doc.save(function(err) {
+			    if(err) 
+				console.error(err);
+			})
+			lineIndex++;
+		}
+	    }
+	    else
+		lineIndex++;
+	})
+	lineReader.on('close', function() {
+		console.log('file reading ends!');
+	    });
+}
+else if( createOP === "create-rgb" ){
+    /*
+      The collection l8collections will be directly created from an index file based on 
+      scene's rgb files
+   
+      Command is:
+
+      node l8file.js D:\webs\node-todo\node-todo-master\data\raster\l8\collection\rgb\index.txt create-rgb
+
+    */
+    
+    var lineIndex = 0;
+    var arrays, length;
+    
+    // get readline objecct
+    var lineReader = require('readline').createInterface({
+	    input: require('fs').createReadStream(filename)
+	});
+
+    // read line one by one
+    lineReader.on('line', function (line) {
+	    console.log(lineIndex);
+	    // ignore the first row
+	    if( lineIndex > 0 ){
+		// token the line to string array - totally 12
+		arrays = line.trim().split(";");
+		/*
+		  std::string oName = oFilename + ";" + oTime + ";" + oCloud + ";" + \
+				ULX + ";" + ULY + ";" + URX + ";" + URY + ";" + \
+				LRX + ";" + LRY + ";" + LLX + ";" + LLY + ";" + ULX + ";" + ULY + "\n";
+
+				*/
+		
+		length = arrays.length;
+		if( length > 0 && Number(arrays[3]) < 20 ){
+		    // create an instance - document
+		    var doc = new geoModel({
+			    geometry : {
+				type : 'Polygon',
+			        coordinates:[[[Number(arrays[3]),Number(arrays[4])],
+					    [Number(arrays[5]),Number(arrays[6])],
+					    [Number(arrays[7]),Number(arrays[8])],
+					    [Number(arrays[9]),Number(arrays[10])],
+					    [Number(arrays[11]),Number(arrays[12])]]]
+			    },
+			  
+			    filename : arrays[0],
+			    date : Date(arrays[1]),
+			    cloud : Number(arrays[2])
+			    
+			});
+		    // save to the collection
+		    doc.save(function(err) {
+			    if(err) 
+				console.error(err);
+			})
+			lineIndex++;
+		}
+	    }
+	    else
+		lineIndex++;
+	})
+	lineReader.on('close', function() {
+		console.log('file reading ends!');
+	    });
+}
+
+//mongoose.disconnect();
+
+console.log('total records', geoModel.count());

@@ -1,0 +1,459 @@
+<!doctype html>
+
+<!-- ASSIGN OUR ANGULAR MODULE -->
+<html ng-app="scotchTodo">
+  <head>
+    <!-- META -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1  shrink-to-fit=no"><!-- Optimize mobile viewport -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Node/Angular Todo App</title>
+
+    <!-- Change the order of SCROLLS and Bootstrap core CSS will make navbar different,
+	 it seems to me Bootstrap core CSS control navbar.  But inorder to make component 
+	 in the Database page, SCROLLS need to include as well   - Zhao
+   -->
+	 
+    <!-- Add the slick-theme.css if you want default styling 
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/gh/kenwheeler/slick@1.8.1/slick/slick.css"/>
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/gh/kenwheeler/slick@1.8.1/slick/slick-theme.css"/>
+    -->
+
+    <!-- SCROLLS -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css"><!-- load bootstrap -->
+
+       <!-- Bootstrap core CSS -->
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
+
+    <!-- Plugin CSS -->
+    <link href="vendor/magnific-popup/magnific-popup.css" rel="stylesheet">
+
+     <!-- Custom styles for this template -->
+    <link href="css/landing-page.css" rel="stylesheet">
+    <link href="css/creative.min.css" rel="stylesheet">
+    
+    <!-- image slider 
+    <link rel="import" href="slider.html">
+   -->
+
+   
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.2.1/assets/owl.theme.default.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.2.1/assets/owl.carousel.css" rel="stylesheet"/>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.2.1/owl.carousel.min.js"></script>
+
+    <link href="css/slider.css" rel="stylesheet">
+   
+    
+<!--
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+-->
+   
+    <!-- SPELLS -->
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script><!-- load angular -->
+
+    <script src="js/controllers/parameters.js"></script> <!-- load our main application -->
+
+    <script src="js/controllers/main.js"></script> <!-- load up our controller -->
+    <script src="js/services/todos.js"></script> <!-- load our todo service -->
+    <script src="js/core.js"></script> <!-- load our main application -->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+      <!-- openstreetmap stuff -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+
+    <!-- date picker -->
+    <link href="Content/bootstrap/bootstrap.css" rel="stylesheet" type="text/css" />
+    <link href="Content/Prettify/Themes/bootstrap.css" rel="stylesheet" />
+
+    <script src="vendor/moment-datepicker-master/Scripts/jquery-2.0.3.js" type="text/javascript"></script>
+    <script src="vendor/moment-datepicker-master/Scripts/moment.js" type="text/javascript"></script>
+    <script src="vendor/moment-datepicker-master/Scripts/bootstrap.js" type="text/javascript"></script>
+    <script src="vendor/moment-datepicker-master/Scripts/Prettify/prettify.js"></script>
+    <script src="vendor/moment-datepicker-master/Scripts/knockout-2.3.0.js" type="text/javascript"></script>
+    <script src="vendor/moment-datepicker-master/Scripts/underscore.js" type="text/javascript"></script>
+
+    <link href="vendor/moment-datepicker-master/moment-datepicker/datepicker.css" rel="stylesheet" />
+    <script src="vendor/moment-datepicker-master/moment-datepicker/moment-datepicker.js"></script>
+    <script src="vendor/moment-datepicker-master/moment-datepicker/moment-datepicker-ko.js"></script>
+
+    <script src="vendor/moment-datepicker-master/Scripts/site.js" type="text/javascript"></script>
+
+    <!-- datepicker -->
+<!--
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+   -->
+ 
+<!--
+<script>
+function addImages( index, total, data, time){
+    <div class="mySlides fade">
+	<div class="numbertext">index / total</div>
+	<img src="data:image/bmp;base64," + data style="width:128">
+	 'data:image/jpeg;base64,' + btoa('your-binary-data');
+	<div class="text">time</div>
+    </div>
+}
+function addSlideArrays(){
+    <a class="slideprev" onclick="plusSlides(-1)">&#10094;</a>
+    <a class="slidenext" onclick="plusSlides(1)">&#10095;</a>
+}
+
+function addSlideDots(index){
+    var i;
+    <br>
+    <div style="text-align:center">
+      for( i = 1; i <= index; i++ ){
+			   var name = "currentSlide(" + String(i) + ")";
+			   <span class="dot" onclick=name></span>
+			   }
+    </div> 
+}
+</script>
+   -->
+  </head>
+
+  <!-- SET THE CONTROLLER -->
+  <body id="page-top">
+    <nav class="navbar navbar-expand-lg navbar-light bg-success fixed-top" id="mainNav">
+       <div class="container">
+        <a class="navbar-brand" href="#page-top">Geo-Agriculture</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="#about">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#services">Services</a>
+            </li>
+	    <li class="nav-item">
+              <a class="nav-link" href="#portfolio">PortFolio</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#contact">Contact</a>
+            </li>
+	    <li class="nav-item">
+              <a class="nav-link" href="#logon">Login</a>
+            </li>
+          </ul>
+        </div>
+     </div>
+    </nav>
+   
+
+    <header class="masthead">
+      <div class="header-content">
+        <div class="header-content-inner">
+          <h1 id="homeHeading">Your Favorite Source of Free Bootstrap Themes</h1>
+          <hr>
+          <p>Start Bootstrap can help you build better websites using the Bootstrap CSS framework! Just download your template and start going, no strings attached!</p>
+          <a class="btn btn-primary btn-xl js-scroll-trigger" href="#about">Find Out More</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="bg-primary" id="about">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 mx-auto text-center">
+            <h2 class="section-heading text-white">We've got what you need!</h2>
+            <hr class="light">
+            <p class="text-faded">Start Bootstrap has everything you need to get your new website up and running in no time! All of the templates and themes on Start Bootstrap are open source, free to download, and easy to use. No strings attached!</p>
+            <a class="btn btn-default btn-xl js-scroll-trigger" href="#services">Get Started!</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 
+	 Access to server side to get images for a given position
+      -->
+
+    <section id="services" ng-controller="positionController" >
+      <div class="container">
+	
+	<h2>Please Select Your Position:</h2> <!-- cannot remove this line, otherwise zoom in/out button dispeared ? -->
+	<br>
+	<!-- <div  ng-controller="posCtrl"> -->
+	<div id="map" style="width: 100%; height: 500px; border: 1px solid #AAA;"></div>
+	<script type='text/javascript' src='maps/markers.json'></script>
+	<script type='text/javascript' src='maps/geo-map.js'></script>
+
+	<br>
+	<h3 id="selectedPos">Position:</h3> 
+	<!-- first row -->
+	<div class="row justify-content-center">
+	  <div class="col-sm-2">
+	    <label for="longitutde">Longitude:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <input class="form-control" id="longitude" type="text" ng-model="CurrLong" ng-change="ChangeLong">
+	  </div>
+	  <div class="col-sm-2">
+	    <label for="latitude">Latitude:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <input class="form-control" id="latitude" type="text" ng-model="CurrLat" ng-change="ChangeLat">
+	  </div>
+	</div>  
+	
+	<!-- second row -->
+	<h3 id="selectedCover">Geometry:</h3> 
+	<div class="row justify-content-center">
+	   <div class="col-sm-2">
+	    <label for="distance">Distance to Cover:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="distanceName" id="distance" ng-options="distanceName for distanceName in distanceNames"></select>
+	  </div>
+
+	  <div class="col-sm-2">
+	    <label for="areacovered">Area to Cover:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="areaName" id="areatocover" ng-options="areaName for areaName in areaNames"></select>
+	  </div>
+	</div>  
+
+	<!-- third row -->
+	<h3 id="selectedData">Data Type:</h3> 
+	<div class="row justify-content-center">
+	  <div class="col-sm-2">
+	    <label for="sensor">Sensor:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="sensorName" id="sensor" ng-options="sensorName for sensorName in sensorNames"></select>
+	  </div>
+
+	  <div class="col-sm-2">
+	    <label for="cloud">Cloud:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="cloudName" id="cloud" ng-options="cloudName for cloudName in cloudNames"></select>
+	  </div>
+
+	  <!--
+	  <div class="w-100"></div>
+	  <br><br>
+
+	  <div class="col-sm-2">
+	    <label for="cloud">Cloud:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="cloudName" id="cloud" ng-options="cloudName for cloudName in cloudNames"></select>
+	  </div>
+
+	  <div class="col-sm-2">
+	    <label for="metero">Metero:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="meteroName" id="metero" ng-options="meteroName for meteroName in meteroNames"></select>
+	  </div>
+	  -->
+
+	</div>  
+	
+	<!-- fourth row -->
+	<br>
+	<h3 id="weargerData">Weather:</h3> 
+	<div class="row justify-content-center">
+	  <div class="col-sm-2">
+	    <input type="checkbox" id="surfRef" name="surfRef">
+	    <label for="surfRef">Surface Reflectance</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <label for="ndvi"><input type="checkbox" id="ndvi" /> <span>NDVI</span></label>
+	  </div>
+	  <div class="col-sm-2">
+	    <label for="surfTemp"><input type="checkbox" id="surfTemp" /> <span>Surface Temperature</span></label>
+	  </div>
+	  <div class="col-sm-3">
+	    <label for="surfMoist"><input type="checkbox" id="surfMoist" /> <span>Surface Moisture</span></label>
+	  </div>
+
+	  <div class="w-100"></div>
+	  <br><br>
+
+	  <div class="col-sm-2">
+	    <label for="precip"><input type="checkbox" id="precip" /> <span>Precipitation</span></label>
+	    <!--<label for="surfRad"><input type="checkbox" id="surfRad" /> <span>Surface Radiation</span></label>-->
+	  </div>
+	  <div class="col-sm-3">
+	    <label for="neeco2"><input type="checkbox" id="neeco2" /> <span>NEE of CO2</span></label>
+	  </div>
+	  <div class="col-sm-2">
+	    <label for="evaptrans"><input type="checkbox" id="evaptrans" /> <span>Evapotranspiration</span></label>
+	  </div>
+	  <div class="col-sm-3">
+	    <label for="wind"><input type="checkbox" id="wind" /> <span>Wind</span></label>
+	  </div>
+
+	  <div class="w-100"></div>
+	  <br><br>
+
+	  <div class="col-sm-2">
+	    <label for="soilType"><input type="checkbox" id="soilType" /> <span>Soil Type</span></label>
+	  </div>
+	  <div class="col-sm-3">
+	    <label for="dem"><input type="checkbox" id="dem" /> <span>DEM</span></label>
+	  </div>
+	  <div class="col-sm-2">
+	    <label for="drought"><input type="checkbox" id="drought" /> <span>Drought</span></label>
+	  </div>
+	  <div class="col-sm-3">
+	    <label for="forcast"><input type="checkbox" id="forcast" /> <span>Forcasting</span></label>
+	  </div>
+
+	</div>  
+
+	<!-- fifth row -->
+	<br>
+	<h3 id="selectedCover">Data Range:</h3> 
+	<div class="row justify-content-center">
+	  <div class="col-sm-2">
+	    <label for="sttime">Starting Time:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <input  id="dp4" type="text" class="form-control" data-bind="datepicker: birthdayThisYearMoment,datepickerOptions: { format: 'DD/MM/YYYY', startDate: '20/01/2013', endDate: '09/10/2017' }">
+	  </div>
+	  <div class="col-sm-2">
+	    <label for="endtime">Ending Time:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <input  id="dp5" type="text" class="form-control" data-bind="datepicker: birthdayDate, datepickerOptions: { format: 'DD/MM/YYYY', startDate: '20/01/2013', endDate: '09/10/2017'}">
+	  </div>
+	</div> 
+
+	<!-- six row -->
+	<h3 id="selectedCover">Time Interval:</h3> 
+	<div class="row justify-content-center">
+	   <div class="col-sm-2">
+	    <label for="imageInterval">Image Interval:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="imageName" id="imageInterval" ng-options="imageName for imageName in imageNames"></select>
+	  </div>
+
+	  <div class="col-sm-2">
+	    <label for="weatherInterval">Weather Interval:</label>
+	  </div>
+	  <div class="col-sm-3">
+	    <select ng-model="weatherName" id="weatherInterval" ng-options="weatherName for weatherName in weatherNames"></select>
+	  </div>
+	</div>  
+	
+	<!-- seven row -->
+	<br><br>
+	<div class="row justify-content-center">
+	  <button id="selectedParams" class="btn btn-primary btn-lg">Select</button>
+	</div> 
+
+      </div>
+
+    </section>
+
+    
+    <div class="slideshow-container">
+      <p id="landsat8" style="display:none">Landsat 8 Images:</p>
+      <div id="owl-demo" class="owl-carousel owl-theme" ></div>
+      <p id="reflectance" style="display:none" style="display:none">Reflectance:</p>
+      <div id="owl-reflectance" class="owl-carousel owl-theme" ></div>
+      <p id="ndvichart" style="display:none">NDVI Chart:</p>
+      <div><canvas id="chart-ndvi" width="400" ></canvas></div>
+      <p id="ndvi" style="display:none">NDVI Thermal Images:</p>
+      <div id="owl-ndvi" class="owl-carousel owl-theme" ></div>
+      <p id="evi" style="display:none">EVI Thermal Images:</p>
+      <div id="owl-evi" class="owl-carousel owl-theme" ></div>
+      <p id="tempchart" style="display:none">Temperature Chart:</p>
+      <div><canvas id="chart-temperature" width="400" ></canvas></div>
+      <p id="temperature" style="display:none">Temperature Thermal Images:</p>
+      <div id="owl-temperature" class="owl-carousel owl-theme" ></div>
+      <p id="moistchart" style="display:none">Moisture Chart:</p>
+      <div><canvas id="chart-moisture" width="400" ></canvas></div>
+      <p id="precipchart" style="display:none">Precipitation Chart:</p>
+      <div><canvas id="chart-precip" width="400" ></canvas></div>
+      <p id="neeco2" style="display:none">NEE of CO2:</p>
+      <div><canvas id="chart-neeco2" width="400" ></canvas></div>
+    </div> 
+    <!--<div class="dots" style="text-align:center"></div> -->
+
+      
+     
+    <section id="portfolio" ng-controller="mainController">
+      <div class="container">
+	<!-- HEADER AND TODO COUNT -->
+	<div class="jumbotron text-center">
+	  <h1>I'm a Todo-aholic <span class="label label-info">{{ todos.length }}</span></h1>
+	</div>
+
+	<!-- TODO LIST -->
+	<div id="todo-list" class="row">
+	  <div class="col-sm-4 col-sm-offset-4">
+
+	    <!-- LOOP OVER THE TODOS IN $scope.todos -->
+	    <div class="checkbox" ng-repeat="todo in todos">
+	      <label>
+		<input type="checkbox" ng-click="deleteTodo(todo._id)"> {{ todo.text }}
+	      </label>
+	    </div>
+
+	    <p class="text-center" ng-show="loading">
+	      <span class="fa fa-spinner fa-spin fa-3x"></span>
+	    </p>
+
+	  </div>
+	</div>
+
+	<!-- FORM TO CREATE TODOS -->
+	<div id="todo-form" class="row">
+	  <div class="col-sm-8 col-sm-offset-2 text-center">
+	    <form>
+	      <div class="form-group">
+	      
+		<!-- BIND THIS VALUE TO formData.text IN ANGULAR -->
+		<input type="text" class="form-control input-lg text-center" placeholder="I want to buy a puppy that will love me forever" ng-model="formData.text">
+	      </div>
+
+	      <!-- createToDo() WILL CREATE NEW TODOS -->
+	      <button type="submit" class="btn btn-primary btn-lg" ng-click="createTodo()">Add</button>
+	    </form>
+	  </div>
+	</div>
+      </div>
+    </section>
+
+
+    <section id="contact">
+      <div class="text-center text-muted">
+	<p>A demo by <a href="http://scotch.io">Scotch</a>.</p>
+	<p>Read the <a href="http://scotch.io/tutorials/javascript/creating-a-single-page-todo-app-with-node-and-angular">tutorial</a>.</p>
+      </div>
+    </section>
+
+     <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/popper/popper.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+    <!-- <script type="text/javascript" src="//cdn.jsdelivr.net/gh/kenwheeler/slick@1.8.1/slick/slick.min.js"></script> -->
+    <script src="js/mapquery5.js"></script> <!-- load our main application -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.2.1/owl.carousel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+
+  </body>
+</html>

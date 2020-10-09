@@ -1,0 +1,14 @@
+// require mongoose api
+var mongoose = require('mongoose');
+
+// get l8collection collecion
+module.exports = mongoose.model('l8collection', {
+	geometry : {
+	    type: {type: String},
+	    coordinates : []
+	},
+	filename : String,
+	date : Date,
+	cloud : Number
+});
+

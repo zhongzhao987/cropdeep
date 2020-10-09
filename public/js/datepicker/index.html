@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>angular-eonasdan-datetimepicker</title>
+
+    <!-- bower:css -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet"
+          href="https://cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/4.17.37/build/css/bootstrap-datetimepicker.min.css">
+    <!-- endinject -->
+</head>
+
+<body ng-app="plunker">
+
+<div ng-controller="controller as vm">
+
+    <div class="well">
+        <h3>Angular-eonasdan-datetimepicker</h3>
+        <a href="https://github.com/atais/angular-eonasdan-datetimepicker"><p style="margin: -10px 0 0 0;">
+            https://github.com/atais/angular-eonasdan-datetimepicker</p></a>
+        <br>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                    <div class="input-group" datetimepicker
+                         on-change="vm.update(vm.dateFrom, vm.dateTo)"
+                         ng-model="vm.dateFrom" options="vm.optionsFrom">
+                        <input class="form-control"/>
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </div>
+                </div>
+                <br>
+                <p><b>Input date:</b> {{vm.dateFrom.format() | date: 'yyyy/MM/dd'}}</p>
+                <p><b>Options:</b> {{vm.optionsFrom}}</p>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <div class="input-group" datetimepicker
+                         on-change="vm.update(vm.dateFrom, vm.dateTo)"
+                         ng-model="vm.dateTo" options="vm.optionsTo">
+                        <input class="form-control"/>
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </div>
+                </div>
+                <br>
+                <p><b>Input date:</b> {{vm.dateTo.format() | date: 'yyyy/MM/dd'}}</p>
+                <p><b>Options:</b> {{vm.optionsTo}}</p>
+            </div>
+        </div>
+
+        <button class="btn btn-default" ng-click="vm.print()">What's up?</button>
+    </div>
+</div>
+
+<!-- bower:js -->
+<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.6/angular.min.js"></script>
+<script src="https://cdn.rawgit.com/Eonasdan/bootstrap-datetimepicker/4.17.37/build/js/bootstrap-datetimepicker.min.js"></script>
+<!-- endinject -->
+<script src="https://rawgit.com/atais/angular-eonasdan-datetimepicker/0.3.8/dist/angular-eonasdan-datetimepicker.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
+
+
